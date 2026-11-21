@@ -55,7 +55,11 @@ func Check(ctx context.Context, host string, port uint16, timeout time.Duration)
 }
 
 func classify(ctx context.Context, err error) State {
-	if ctx.Err() != nil {
+	if ctx.Err() != nil || errors.Is(err, context.Canceled) {
+		return Canceled
+	}
+	// DialContext и родительский контекст имеют независимые дедлайны
+	if deadline, ok := ctx.Deadline(); ok && !time.Now().Before(deadline) {
 		return Canceled
 	}
 	var dnsErr *net.DNSError
